@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文單字測驗</title>
+    <!-- 引入 Tailwind CSS 以實現現代化與響應式設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自訂一些簡單的動畫過渡效果 */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 隱藏預設的 radio 圓圈，使用自訂樣式 */
+        input[type="radio"] {
+            accent-color: #3b82f6; /* Tailwind blue-500 */
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- 標題區塊 -->
+        <header class="text-center mb-8 fade-in">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">📚 英文單字測驗</h1>
+            <p class="text-slate-500">測試你的英文單字量，選出正確的中文解釋或英文單字！</p>
+        </header>
+
+        <!-- 測驗內容區塊 -->
+        <main class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-10 mb-8 fade-in">
+            <div id="quiz-container" class="space-y-8">
+                <!-- 題目將透過 JavaScript 動態生成於此 -->
+            </div>
+
+            <!-- 操作按鈕 -->
+            <div class="mt-10 pt-6 border-t border-slate-100 flex justify-center">
+                <button id="submit-btn" onclick="submitQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-lg">
+                    交卷並看成績
+                </button>
+                <button id="retry-btn" onclick="resetQuiz()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-3 px-8 rounded-lg shadow-sm transition-all duration-200 text-lg">
+                    再測一次
+                </button>
+            </div>
+        </main>
+
+        <!-- 結果顯示區塊 -->
+        <div id="result-container" class="hidden text-center bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 fade-in">
+            <h2 class="text-2xl font-bold mb-4" id="score-title">你的成績</h2>
+            <div class="text-5xl font-extrabold mb-4" id="score-display">0 / 100</div>
+            <p class="text-lg text-slate-600 mb-6" id="score-message">繼續加油！</p>
+        </div>
+    </div>
+
+    <script>
+        // 題庫設定：可以自由在此新增或修改題目
+        const quizData = [
+            {
+                question: "1. 請問「Apple」的中文意思是？",
+                options: ["蘋果", "香蕉", "橘子", "西瓜"],
+                answer: 0 // 正確答案的索引值 (0代表第一個選項)
+            },
+            {
+                question: "2. 請問「美麗的」的英文單字是？",
+                options: ["Ugly", "Beautiful", "Smart", "Angry"],
+                answer: 1
+            },
+            {
+                question: "3. 請問「Ubiquitous」的中文意思是？",
+                options: ["稀有的", "昂貴的", "無所不在的", "危險的"],
+                answer: 2
+            },
+            {
+                question: "4. 請問「一絲不苟的、嚴謹的」的英文單字是？",
+                options: ["Careless", "Meticulous", "Random", "Quick"],
+                answer: 1
+            },
+            {
+                question: "5. 請問「Resilient」的中文意思是？",
+                options: ["脆弱的", "僵硬的", "緩慢的", "有彈性的/堅韌的"],
+                answer: 3
+            }
+        ];
+
+        const quizContainer = document.getElementById('quiz-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const resultContainer = document.getElementById('result-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreMessage = document.getElementById('score-message');
+
+        // 初始化測驗
+        function renderQuiz() {
+            quizContainer.innerHTML = ''; // 清空容器
+            
+            quizData.forEach((q, qIndex) => {
+                // 建立題目區塊
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-block';
+                questionDiv.id = `question-block-${qIndex}`;
+
+                // 建立題目文字
+                const questionTitle = document.createElement('h3');
+                questionTitle.className = 'text-lg font-semibold text-slate-800 mb-3';
+                questionTitle.innerText = q.question;
+                questionDiv.appendChild(questionTitle);
+
+                // 建立選項列表
+                const optionsList = document.createElement('div');
+                optionsList.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+
+                q.options.forEach((opt, optIndex) => {
+                    const label = document.createElement('label');
+                    // 選項預設樣式
+                    label.className = `option-label flex items-center p-4 border rounded-xl cursor-pointer transition-colors duration-200 hover:bg-slate-50 border-slate-200`;
+                    label.id = `label-${qIndex}-${optIndex}`;
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = `question-${qIndex}`;
+                    radio.value = optIndex;
+                    radio.className = 'mr-3';
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'text-slate-700 text-lg';
+                    textSpan.innerText = opt;
+
+                    label.appendChild(radio);
+                    label.appendChild(textSpan);
+                    optionsList.appendChild(label);
+                });
+
+                questionDiv.appendChild(optionsList);
+                quizContainer.appendChild(questionDiv);
+            });
+        }
+
+        // 送出並計算分數
+        function submitQuiz() {
+            let score = 0;
+            let totalQuestions = quizData.length;
+            let allAnswered = true;
+
+            // 檢查是否所有題目都已作答並計算分數
+            quizData.forEach((q, qIndex) => {
+                const selected = document.querySelector(`input[name="question-${qIndex}"]:checked`);
+                const questionBlock = document.getElementById(`question-block-${qIndex}`);
+                
+                if (!selected) {
+                    allAnswered = false;
+                    // 若未作答，將該題目標示為紅色提醒
+                    questionBlock.classList.add('p-4', 'bg-red-50', 'rounded-xl', 'border', 'border-red-200');
+                } else {
+                    questionBlock.classList.remove('p-4', 'bg-red-50', 'rounded-xl', 'border', 'border-red-200');
+                    const selectedValue = parseInt(selected.value);
+                    
+                    // 鎖定所有選項避免再次點擊
+                    const radios = document.querySelectorAll(`input[name="question-${qIndex}"]`);
+                    radios.forEach(r => r.disabled = true);
+
+                    // 判斷對錯並給予顏色回饋
+                    if (selectedValue === q.answer) {
+                        score++;
+                        document.getElementById(`label-${qIndex}-${selectedValue}`).classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                        document.getElementById(`label-${qIndex}-${selectedValue}`).classList.remove('hover:bg-slate-50', 'border-slate-200');
+                    } else {
+                        // 標示錯誤的選擇
+                        document.getElementById(`label-${qIndex}-${selectedValue}`).classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                        document.getElementById(`label-${qIndex}-${selectedValue}`).classList.remove('hover:bg-slate-50', 'border-slate-200');
+                        // 標示正確答案
+                        document.getElementById(`label-${qIndex}-${q.answer}`).classList.add('bg-green-100', 'border-green-500', 'text-green-800', 'ring-2', 'ring-green-400');
+                        document.getElementById(`label-${qIndex}-${q.answer}`).classList.remove('hover:bg-slate-50', 'border-slate-200');
+                    }
+                }
+            });
+
+            // 如果有題目未作答，停止計算並提示（使用頁面內提示取代 alert）
+            if (!allAnswered) {
+                // 將畫面滾動到最上方
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // 這裡可以選擇顯示一個提示框，這裡我們利用紅色背景提示未作答區塊
+                return; 
+            }
+
+            // 計算最終分數 (百分制)
+            const finalScore = Math.round((score / totalQuestions) * 100);
+
+            // 更新結果畫面
+            scoreDisplay.innerText = `${finalScore} 分`;
+            
+            if (finalScore === 100) {
+                scoreDisplay.className = "text-5xl font-extrabold mb-4 text-green-600";
+                scoreMessage.innerText = "太厲害了！全部答對！🎉";
+            } else if (finalScore >= 60) {
+                scoreDisplay.className = "text-5xl font-extrabold mb-4 text-blue-600";
+                scoreMessage.innerText = "表現不錯，及格了！繼續保持！👍";
+            } else {
+                scoreDisplay.className = "text-5xl font-extrabold mb-4 text-red-600";
+                scoreMessage.innerText = "有點可惜，再複習一下會更好喔！💪";
+            }
+
+            // 切換按鈕與顯示結果
+            submitBtn.classList.add('hidden');
+            retryBtn.classList.remove('hidden');
+            resultContainer.classList.remove('hidden');
+
+            // 滾動到結果區域
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 重新測驗
+        function resetQuiz() {
+            // 隱藏結果與切換按鈕
+            resultContainer.classList.add('hidden');
+            retryBtn.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
+
+            // 重新渲染題目 (會重置所有狀態與選擇)
+            renderQuiz();
+
+            // 滾動回最上方
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 網頁載入完成後執行
+        document.addEventListener('DOMContentLoaded', renderQuiz);
+
+    </script>
+</body>
+</html>
